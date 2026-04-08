@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  awesome-bot:
+    build: .
+    container_name: awesome-phishing-bot
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+      - "5000:5000"
+    volumes:
+      # Persistent data
+      - ./data/.awesome_bot:/app/.awesome_bot
+      - ./data/reports:/app/awesome_reports
+      # Configuration (optional)
+      - ./config/config.json:/app/.awesome_bot/config.json:ro
+      - ./config/telegram_config.json:/app/.awesome_bot/telegram_config.json:ro
+      - ./config/discord_config.json:/app/.awesome_bot/discord_config.json:ro
+      - ./config/slack_config.json:/app/.awesome_bot/slack_config.json:ro
+    environment:
+      - TZ=UTC
+      - PYTHONUNBUFFERED=1
+      - LOG_LEVEL=INFO
+    networks:
+      - awesome-network
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import socket; s=socket.socket(); s.connect(('localhost', 8080))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Optional: Redis for session management
+  redis:
+    image: redis:7-alpine
+    container_name: awesome-bot-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./data/redis:/data
+    networks:
+      - awesome-network
+    profiles:
+      - advanced
+
+  # Optional: PostgreSQL for advanced storage
+  postgres:
+    image: postgres:16-alpine
+    container_name: awesome-bot-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: awesome_bot
+      POSTGRES_USER: awesome_user
+      POSTGRES_PASSWORD: awesome_pass
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    networks:
+      - awesome-network
+    profiles:
+      - advanced
+
+networks:
+  awesome-network:
+    driver: bridge
+
+volumes:
+  awesome-bot-data:
+  redis-data:
+  postgres-data:

