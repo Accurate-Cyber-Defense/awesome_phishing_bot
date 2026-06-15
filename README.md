@@ -70,3 +70,4 @@ python awesome_phishing_bot.py
 
  # Star History
  
+[![Star History Chart](https://api.star-history.com/svg?repos=Accurate-Cyber-Defense/awesome_phishing_bot&type=Date)](https://star-history.com/#Accurate-Cyber-Defense/awesome_phishing_bot&Date)
